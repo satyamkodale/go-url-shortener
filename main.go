@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -54,6 +55,22 @@ func getURL(shortURL string) (URL, error) {
 		return URL{}, errors.New("URL not found")
 	}
 	return url, nil
+}
+
+func redirectHandler(w http.ResponseWriter, r *http.Request) {
+	short_url := strings.TrimPrefix(r.URL.Path, "/redirect/")
+	if short_url == "" {
+		http.Error(w, "Missing URL ID", http.StatusBadRequest)
+		return
+	}
+	url, error := getURL(short_url)
+	if error != nil {
+		http.Error(w, error.Error(), http.StatusNotFound)
+		return
+	}
+
+	http.Redirect(w, r, url.URL, http.StatusSeeOther)
+
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
