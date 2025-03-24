@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -46,6 +47,15 @@ func saveURL(originalurl string, short_url string) string {
 	}
 	return short_url
 }
+
+func getURL(shortURL string) (URL, error) {
+	url, error := DB[shortURL]
+	if !error {
+		return URL{}, errors.New("URL not found")
+	}
+	return url, nil
+}
+
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to URL Shortner")
 }
