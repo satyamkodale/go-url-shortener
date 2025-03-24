@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -37,6 +38,23 @@ func generateShortURL(originalString string) string {
 	hash := hex.EncodeToString(data)
 	saveURL(originalString, hash[:8])
 	return hash[:8]
+}
+
+func getShortURL(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		OrgUrl string `json:"orgurl"`
+	}
+	var req request
+	error := json.NewDecoder(r.Body).Decode(&req)
+	if error != nil {
+		http.Error(w, error.Error(), http.StatusBadRequest)
+	}
+	shortURL := generateShortURL(req.OrgUrl)
+
+	response := map[string]string{"short_url": shortURL}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func saveURL(originalurl string, short_url string) string {
@@ -81,6 +99,7 @@ func main() {
 	fmt.Println("<<<<<<<< Starting Server At 1911 >>>>>>>>")
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/short_url", getShortURL)
+	http.HandleFunc("/redirect/", redirectHandler)
 	error := http.ListenAndServe(":1911", nil)
 	if error != nil {
 		fmt.Println("Error for starting the server")
