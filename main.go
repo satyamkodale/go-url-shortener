@@ -1,10 +1,51 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"net/http"
+	"time"
 )
 
+type URL struct {
+	ID        string    `json:"id"`
+	URL       string    `json:"url"`
+	ShortURL  string    `json:"short_url"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+/*
+	     quedndh -> URL {
+			   	id:quedndh ,
+					url: "https://www.google.com",
+					short_url: "http://localhost:8080/quedndh",
+					created_at: time.Now()
+			 }
+*/
+var DB = make(map[string]URL)
+
+func generateShortURL(originalString string) string {
+	//1: converted to byte stream to original array
+	hasher := md5.New()
+	hasher.Write([]byte(originalString))
+	//2: get sum of  hash
+	data := hasher.Sum(nil)
+	//3: convert to string
+	hash := hex.EncodeToString(data)
+	saveURL(originalString, hash[:8])
+	return hash[:8]
+}
+
+func saveURL(originalurl string, short_url string) string {
+	DB[short_url] = URL{
+		ID:        short_url,
+		URL:       originalurl,
+		ShortURL:  short_url,
+		CreatedAt: time.Now(),
+	}
+	return short_url
+}
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to URL Shortner")
 }
@@ -12,6 +53,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Println("<<<<<<<< Starting Server At 1911 >>>>>>>>")
 	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/short_url", getShortURL)
 	error := http.ListenAndServe(":1911", nil)
 	if error != nil {
 		fmt.Println("Error for starting the server")
